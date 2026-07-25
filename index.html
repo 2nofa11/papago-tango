@@ -243,6 +243,13 @@
     width:36px; height:4px; border-radius:2px; background:var(--line);
     margin:2px auto 0; flex-shrink:0;
   }
+  /* on wider screens this is a bottom-anchored mobile sheet no longer makes
+     sense — switch to a normal centered dialog */
+  @media (min-width:640px){
+    #settingsOverlay{ align-items:center; padding:24px; }
+    #settingsPanel{ border-radius:20px; max-height:80vh; }
+    #settingsHandle{ display:none; }
+  }
   #settingsPanel h2{ font-size:15px; margin:0; }
   .setting-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
   .setting-row label{ font-size:13px; color:var(--ink-soft); }
