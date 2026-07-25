@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EDEAE2">
 <title>台湾華語 単語帳</title>
 <style>
   :root{
+    color-scheme: light;
     --paper:#EDEAE2;
     --card:#FBF9F4;
     --ink:#22241F;
@@ -19,7 +21,13 @@
     --line:#D8D3C4;
     --t1:#C0392B; --t2:#B8791A; --t3:#3F6B5C; --t4:#33587A; --t0:#93897A;
     --radius:14px;
+    --focus:#8A3226;
+    --shadow-sm: 0 1px 2px rgba(34,36,31,.06), 0 1px 1px rgba(34,36,31,.04);
+    --shadow-card: 0 6px 20px rgba(34,36,31,.09), 0 1px 3px rgba(34,36,31,.06);
+    --safe-t: env(safe-area-inset-top, 0px);
     --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px);
+    --safe-r: env(safe-area-inset-right, 0px);
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
@@ -30,26 +38,36 @@
     font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
     display:flex; justify-content:center;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
   }
-  #app{width:100%; max-width:480px; min-height:100vh; display:flex; flex-direction:column; position:relative;}
+  button, input, select{ font-family:inherit; }
+  :focus-visible{ outline:2px solid var(--focus); outline-offset:2px; border-radius:4px; }
+  #app{
+    width:100%; max-width:480px; min-height:100vh; min-height:100dvh;
+    display:flex; flex-direction:column; position:relative;
+    padding-left:var(--safe-l); padding-right:var(--safe-r);
+  }
 
   header{
-    padding:14px 16px 10px; display:flex; align-items:center; justify-content:space-between;
+    padding:calc(14px + var(--safe-t)) 16px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px;
   }
-  header h1{font-size:16px; margin:0; font-weight:700; letter-spacing:.02em;}
+  header h1{font-size:16px; margin:0; font-weight:700; letter-spacing:.02em; text-wrap:balance;}
   header .sub{font-size:11px; color:var(--ink-soft); margin-top:2px;}
   #gearBtn{
     background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft);
-    padding:6px; line-height:1;
+    width:44px; height:44px; line-height:1; border-radius:999px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
+  @media (hover:hover){ #gearBtn:hover{ background:var(--card); color:var(--ink); } }
 
   /* --- Box shelf: signature element --- */
   #shelf{ padding:0 16px 10px; }
   #shelfRow{ display:flex; gap:3px; align-items:flex-end; height:34px; }
   .box-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
-  .box-bar{ width:100%; max-width:28px; background:var(--box-empty); border-radius:3px 3px 0 0; position:relative; overflow:hidden; transition:height .3s; }
-  .box-bar.hot{ background:var(--jade-soft); }
-  .box-num{ font-size:9px; color:var(--ink-faint); margin-top:3px; }
+  .box-bar{ width:100%; max-width:28px; min-height:3px; background:var(--box-empty); border-radius:3px 3px 0 0; position:relative; overflow:hidden; transition:height .3s; }
+  .box-bar.hot{ background:var(--jade); }
+  .box-num{ font-size:9px; color:var(--ink-faint); margin-top:3px; font-variant-numeric:tabular-nums; }
   #shelfLabels{ display:flex; justify-content:space-between; font-size:9px; color:var(--ink-faint); margin-top:2px; padding:0 2px;}
 
   main{ flex:1; display:flex; flex-direction:column; padding:0 16px 16px; }
@@ -62,31 +80,40 @@
 
   .mode-pick{ display:flex; flex-direction:column; gap:10px; }
   .mode-card{
+    width:100%; font:inherit; color:inherit; -webkit-appearance:none; appearance:none;
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
     padding:16px; text-align:left; cursor:pointer; display:flex; gap:12px; align-items:center;
-    transition:border-color .15s, transform .1s;
+    transition:border-color .15s, transform .1s, box-shadow .15s;
   }
   .mode-card:active{ transform:scale(.98); }
-  .mode-card.selected{ border-color:var(--seal); box-shadow:0 0 0 1px var(--seal); }
+  .mode-card.selected{ border-color:var(--seal); box-shadow:0 0 0 1px var(--seal), var(--shadow-card); }
+  .mode-card:disabled{ opacity:.4; cursor:not-allowed; }
+  @media (hover:hover){ .mode-card:not(:disabled):hover{ border-color:var(--ink-faint); } }
   .mode-card .icon{ font-size:22px; width:34px; text-align:center; }
   .mode-card .title{ font-weight:700; font-size:14px; }
   .mode-card .desc{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
 
   .chip-row{ display:flex; gap:6px; flex-wrap:wrap; }
   .chip{
-    padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:var(--card);
-    font-size:12px; cursor:pointer; color:var(--ink-soft);
+    min-height:36px; font:inherit; -webkit-appearance:none; appearance:none;
+    padding:7px 14px; border-radius:999px; border:1px solid var(--line); background:var(--card);
+    font-size:12px; cursor:pointer; color:var(--ink-soft); box-shadow:var(--shadow-sm);
+    transition:background-color .15s, color .15s, border-color .15s;
   }
   .chip.active{ background:var(--ink); color:var(--card); border-color:var(--ink); }
+  @media (hover:hover){ .chip:not(.active):hover{ border-color:var(--ink-faint); color:var(--ink); } }
 
   .stat-line{ display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); padding:2px 2px; }
-  .stat-line b{ color:var(--ink); font-weight:700; }
+  .stat-line b{ color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; }
 
   #startBtn{
     margin-top:4px; width:100%; padding:15px; border:none; border-radius:var(--radius);
     background:var(--ink); color:var(--paper); font-size:15px; font-weight:700; cursor:pointer;
+    transition:opacity .15s;
   }
   #startBtn:disabled{ opacity:.4; }
+  @media (hover:hover){ #startBtn:not(:disabled):hover{ opacity:.9; } }
 
   #voiceWarn{
     font-size:11.5px; background:#F4E3D9; border:1px solid #E3B79E; color:#7A3B1F;
@@ -98,19 +125,24 @@
   #progRow{ display:flex; align-items:center; gap:8px; font-size:11px; color:var(--ink-soft); margin-bottom:10px; }
   #progBarOuter{ flex:1; height:4px; background:var(--box-empty); border-radius:2px; overflow:hidden; }
   #progBarInner{ height:100%; background:var(--seal); width:0%; transition:width .2s; }
-  #closeSession{ background:none;border:none;color:var(--ink-faint);font-size:13px;cursor:pointer;padding:2px 4px;}
+  #progText{ font-variant-numeric:tabular-nums; }
+  #closeSession{
+    background:none;border:none;color:var(--ink-faint);font-size:13px;cursor:pointer;
+    min-height:36px; padding:2px 8px; border-radius:8px; flex-shrink:0;
+  }
+  @media (hover:hover){ #closeSession:hover{ background:var(--card); color:var(--ink); } }
 
   #card{
     flex:1; background:var(--card); border:1px solid var(--line); border-radius:20px;
+    box-shadow:var(--shadow-card);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    text-align:center; padding:28px 20px; position:relative; min-height:320px; cursor:pointer;
-    gap:10px;
+    text-align:center; padding:28px 20px; position:relative; min-height:0; cursor:pointer;
+    gap:14px;
   }
   #card .lessonTag{
     position:absolute; top:14px; left:16px; font-size:10.5px; color:var(--ink-faint);
     border:1px solid var(--line); padding:2px 8px; border-radius:999px;
   }
-  #promptIcon{ font-size:40px; }
   #promptMain{ font-family:"Noto Serif TC","Hiragino Mincho ProN",serif; font-size:26px; font-weight:600; line-height:1.5; }
   #promptSub{ font-size:12px; color:var(--ink-faint); }
   .tapHint{ font-size:11px; color:var(--ink-faint); margin-top:6px; }
@@ -128,24 +160,44 @@
   #exJa{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
   .noEx{ font-size:12px; color:var(--ink-faint); font-style:italic; }
 
+  /* --- Speaker pill: icon + label, not a bare emoji circle --- */
   .speakerBtn{
-    background:var(--paper); border:1px solid var(--line); border-radius:999px; width:44px; height:44px;
-    font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink);
+    -webkit-appearance:none; appearance:none; font:inherit;
+    border-radius:999px; min-height:44px; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    padding:0 18px;
   }
-  .speakerBtn:active{ transform:scale(.94); }
-  #promptSpeaker{ width:64px; height:64px; font-size:26px; }
+  .speakerBtn svg{ width:16px; height:16px; flex-shrink:0; }
+  .speakerBtn:active{ transform:scale(.96); }
+
+  /* primary: F1 prompt — solid seal pill, the main CTA of the screen */
+  #promptSpeaker{
+    background:var(--seal); border:1px solid var(--seal); color:var(--paper);
+    min-height:52px; padding:0 26px; font-size:15px; font-weight:700; box-shadow:var(--shadow-sm);
+  }
+  #promptSpeaker svg{ width:20px; height:20px; }
+  @media (hover:hover){ #promptSpeaker:hover{ background:#963224; border-color:#963224; } }
+
+  /* secondary: answer-side pill — quiet outline next to the hanzi */
+  #ansSpeaker{
+    background:var(--card); border:1px solid var(--line); color:var(--ink);
+    font-size:12.5px; font-weight:600; padding:0 14px;
+  }
+  @media (hover:hover){ #ansSpeaker:hover{ border-color:var(--ink-faint); background:var(--paper); } }
 
   #judgeRow{
     display:flex; gap:10px; margin-top:14px; padding-bottom:calc(6px + var(--safe-b));
   }
   .judgeBtn{
-    flex:1; padding:16px; border-radius:16px; border:none; font-size:15px; font-weight:700; cursor:pointer;
+    flex:1; min-height:56px; padding:16px; border-radius:16px; border:none; font-size:15px; font-weight:700; cursor:pointer;
     display:flex; flex-direction:column; align-items:center; gap:2px;
+    transition:filter .15s;
   }
   .judgeBtn small{ font-weight:500; font-size:10.5px; opacity:.85; }
   #btnWrong{ background:#F1E4E1; color:var(--seal); }
   #btnRight{ background:var(--jade-soft); color:var(--jade); }
   .judgeBtn:active{ transform:scale(.97); }
+  @media (hover:hover){ .judgeBtn:hover{ filter:brightness(.96); } }
 
   #kbdHints{ display:none; justify-content:center; gap:14px; font-size:10.5px; color:var(--ink-faint); margin-top:8px; }
   @media (hover:hover) and (pointer:fine){ #kbdHints{ display:flex; } }
@@ -154,13 +206,21 @@
   /* --- Summary screen --- */
   #summaryScreen{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; }
   #summaryScreen .big{ font-size:40px; }
-  #summaryStats{ display:flex; gap:22px; }
-  #summaryStats div{ display:flex; flex-direction:column; }
-  #summaryStats .num{ font-size:22px; font-weight:800; }
+  #summaryStats{ display:flex; gap:14px; }
+  #summaryStats div{
+    display:flex; flex-direction:column; gap:2px; min-width:84px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px 16px; box-shadow:var(--shadow-sm);
+  }
+  #summaryStats .num{ font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; }
   #summaryStats .lbl{ font-size:11px; color:var(--ink-soft); }
-  #summaryScreen button{ padding:13px 22px; border-radius:12px; border:none; font-size:14px; font-weight:700; cursor:pointer; }
+  #summaryScreen button{
+    min-height:48px; padding:13px 22px; border-radius:12px; border:none; font-size:14px; font-weight:700; cursor:pointer;
+    transition:opacity .15s;
+  }
   #againBtn{ background:var(--ink); color:var(--paper); }
   #backBtn{ background:var(--card); color:var(--ink); border:1px solid var(--line); }
+  @media (hover:hover){ #summaryScreen button:hover{ opacity:.85; } }
 
   /* --- Settings drawer --- */
   #settingsOverlay{
@@ -168,18 +228,28 @@
   }
   #settingsPanel{
     background:var(--paper); width:100%; max-width:480px; margin:0 auto; border-radius:20px 20px 0 0;
-    padding:20px 18px calc(20px + var(--safe-b)); display:flex; flex-direction:column; gap:16px;
-    max-height:82vh; overflow-y:auto;
+    padding:10px 18px calc(20px + var(--safe-b));
+    padding-left:calc(18px + var(--safe-l)); padding-right:calc(18px + var(--safe-r));
+    display:flex; flex-direction:column; gap:16px;
+    max-height:82vh; overflow-y:auto; overscroll-behavior:contain;
+  }
+  #settingsHandle{
+    width:36px; height:4px; border-radius:2px; background:var(--line);
+    margin:2px auto 0; flex-shrink:0;
   }
   #settingsPanel h2{ font-size:15px; margin:0; }
   .setting-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
   .setting-row label{ font-size:13px; color:var(--ink-soft); }
   .setting-row select, .setting-row input[type=number]{
-    border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:13px; background:var(--card); color:var(--ink);
+    min-height:36px; border:1px solid var(--line); border-radius:8px; padding:6px 8px;
+    font-size:16px; background:var(--card); color:var(--ink);
   }
-  .settings-btn{ padding:11px; border-radius:10px; border:1px solid var(--line); background:var(--card); font-size:13px; cursor:pointer; color:var(--ink); }
-  .settings-btn.danger{ color:var(--seal); border-color:var(--seal-soft); }
-  #closeSettings{ align-self:flex-end; background:none; border:none; font-size:13px; color:var(--ink-faint); cursor:pointer; }
+  .settings-btn{ min-height:44px; padding:11px; border-radius:10px; border:1px solid var(--line); background:var(--card); font-size:13px; cursor:pointer; color:var(--ink); }
+  .settings-btn.danger{ color:var(--seal); border-color:var(--seal-soft); margin-top:4px; }
+  #closeSettings{
+    align-self:flex-end; background:none; border:none; font-size:13px; color:var(--ink-faint); cursor:pointer;
+    min-height:36px; padding:2px 8px;
+  }
 </style>
 </head>
 <body>
@@ -191,7 +261,7 @@
       <div class="sub" id="headerSub">PAPAGO式 Lesson 1〜38・795語 POC</div>
       <div class="sub" id="storageBadge" style="opacity:.7;">保存先: 確認中…</div>
     </div>
-    <button id="gearBtn" aria-label="設定">⚙</button>
+    <button id="gearBtn" type="button" aria-label="設定">⚙</button>
   </header>
 
   <div id="shelf">
@@ -206,31 +276,31 @@
       <div>
         <div class="field-label">出題モード</div>
         <div class="mode-pick">
-          <div class="mode-card selected" data-mode="F1">
-            <div class="icon">🔊</div>
+          <button type="button" class="mode-card selected" data-mode="F1">
+            <div class="icon" aria-hidden="true">🔊</div>
             <div>
               <div class="title">音声 → 単語</div>
               <div class="desc">聞いて、意味が言えたら○</div>
             </div>
-          </div>
-          <div class="mode-card" data-mode="F2">
-            <div class="icon">📝</div>
+          </button>
+          <button type="button" class="mode-card" data-mode="F2">
+            <div class="icon" aria-hidden="true">📝</div>
             <div>
               <div class="title">単語 → 意味</div>
               <div class="desc">漢字を見て、読みと意味が言えたら○</div>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
       <div>
         <div class="field-label">範囲</div>
         <div class="chip-row" id="rangeChips">
-          <div class="chip active" data-range="all">全て (795)</div>
-          <div class="chip" data-range="1-13">L1–13</div>
-          <div class="chip" data-range="14-25">L14–25</div>
-          <div class="chip" data-range="26-38">L26–38</div>
-          <div class="chip" data-range="weak">苦手のみ</div>
+          <button type="button" class="chip active" data-range="all">全て (795)</button>
+          <button type="button" class="chip" data-range="1-13">L1–13</button>
+          <button type="button" class="chip" data-range="14-25">L14–25</button>
+          <button type="button" class="chip" data-range="26-38">L26–38</button>
+          <button type="button" class="chip" data-range="weak">苦手のみ</button>
         </div>
       </div>
 
@@ -242,32 +312,37 @@
         <div class="stat-line"><span>習得済み</span><b id="statMastered">–</b></div>
       </div>
 
-      <button id="startBtn">開始する</button>
+      <button id="startBtn" type="button">開始する</button>
     </div>
 
     <!-- SESSION -->
     <div id="sessionScreen" class="screen hidden">
       <div id="progRow">
-        <button id="closeSession">✕ 中断</button>
+        <button id="closeSession" type="button">✕ 中断</button>
         <div id="progBarOuter"><div id="progBarInner"></div></div>
-        <span id="progText">0/0</span>
+        <span id="progText" aria-live="polite">0/0</span>
       </div>
 
       <div id="card">
         <div class="lessonTag" id="cardLesson">L–</div>
 
         <div id="promptArea">
-          <div id="promptIcon"></div>
-          <button class="speakerBtn hidden" id="promptSpeaker">🔊</button>
+          <button class="speakerBtn hidden" id="promptSpeaker" type="button" aria-label="発音を再生">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+            発音
+          </button>
           <div id="promptMain"></div>
           <div id="promptSub"></div>
           <div class="tapHint">タップ / Space でめくる</div>
         </div>
 
-        <div id="answerBlock" class="hidden">
+        <div id="answerBlock" class="hidden" aria-live="polite">
           <div style="display:flex; align-items:center; gap:8px;">
             <div id="ansHanzi"></div>
-            <button class="speakerBtn" id="ansSpeaker">🔊</button>
+            <button class="speakerBtn" id="ansSpeaker" type="button" aria-label="発音を再生">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+              発音
+            </button>
           </div>
           <div id="ansPinyin"></div>
           <div id="ansMeaning"></div>
@@ -281,20 +356,20 @@
       </div>
 
       <div id="judgeRow" class="hidden">
-        <button class="judgeBtn" id="btnWrong">× <small>難しい</small></button>
-        <button class="judgeBtn" id="btnRight">○ <small>覚えた</small></button>
+        <button class="judgeBtn" id="btnWrong" type="button">× <small>難しい</small></button>
+        <button class="judgeBtn" id="btnRight" type="button">○ <small>覚えた</small></button>
       </div>
       <div id="kbdHints"><span><kbd>Space</kbd> めくる/再生</span><span><kbd>F</kbd> ×</span><span><kbd>J</kbd> ○</span></div>
     </div>
 
     <!-- SUMMARY -->
     <div id="summaryScreen" class="screen hidden">
-      <div class="big">🎴</div>
+      <div class="big" aria-hidden="true">🎴</div>
       <div style="font-size:15px; font-weight:700;">セッション終了</div>
-      <div id="summaryStats"></div>
+      <div id="summaryStats" aria-live="polite"></div>
       <div style="display:flex; gap:10px;">
-        <button id="backBtn">メニューへ</button>
-        <button id="againBtn">もう一巡</button>
+        <button id="backBtn" type="button">メニューへ</button>
+        <button id="againBtn" type="button">もう一巡</button>
       </div>
     </div>
 
@@ -303,18 +378,19 @@
 
 <div id="settingsOverlay" class="hidden">
   <div id="settingsPanel">
-    <button id="closeSettings">閉じる ✕</button>
+    <div id="settingsHandle" aria-hidden="true"></div>
+    <button id="closeSettings" type="button">閉じる ✕</button>
     <h2>設定</h2>
     <div class="setting-row">
-      <label>新規カード/日</label>
-      <input type="number" id="setNewPerDay" min="0" max="200" value="30">
+      <label for="setNewPerDay">新規カード/日</label>
+      <input type="number" inputmode="numeric" id="setNewPerDay" min="0" max="200" value="30">
     </div>
     <div class="setting-row">
-      <label>1日の復習上限</label>
-      <input type="number" id="setReviewCap" min="10" max="500" value="150">
+      <label for="setReviewCap">1日の復習上限</label>
+      <input type="number" inputmode="numeric" id="setReviewCap" min="10" max="500" value="150">
     </div>
     <div class="setting-row">
-      <label>セッション枚数</label>
+      <label for="setSessionSize">セッション枚数</label>
       <select id="setSessionSize">
         <option value="10">10</option>
         <option value="20" selected>20</option>
@@ -322,7 +398,7 @@
       </select>
     </div>
     <div class="setting-row">
-      <label>再生速度</label>
+      <label for="setRate">再生速度</label>
       <select id="setRate">
         <option value="0.8">0.8×（ゆっくり）</option>
         <option value="1" selected>1.0×</option>
@@ -330,18 +406,18 @@
       </select>
     </div>
     <div class="setting-row">
-      <label>zh-TW 音声</label>
+      <label for="setVoice">zh-TW 音声</label>
       <select id="setVoice"></select>
     </div>
     <div class="setting-row">
-      <label>声調の色分け</label>
+      <label for="setToneColor">声調の色分け</label>
       <select id="setToneColor">
         <option value="on" selected>ON</option>
         <option value="off">OFF</option>
       </select>
     </div>
-    <button class="settings-btn" id="exportBtn">進捗をJSONでエクスポート</button>
-    <button class="settings-btn danger" id="resetBtn">進捗をリセット（全消去）</button>
+    <button class="settings-btn" id="exportBtn" type="button">進捗をJSONでエクスポート</button>
+    <button class="settings-btn danger" id="resetBtn" type="button">進捗をリセット（全消去）</button>
   </div>
 </div>
 
@@ -594,8 +670,7 @@ async function initTTS(){
   if(!ttsReady){
     warn.classList.remove('hidden');
     warn.innerHTML = 'この端末では台湾華語（zh-TW）の音声が見つかりませんでした。大陸普通話へは自動で切り替えません。「音声→単語」モードは無効化されます。<br>設定 → 音声認識/読み上げ言語 から「中文（台灣）」の音声を追加してください。';
-    document.querySelector('.mode-card[data-mode="F1"]').style.opacity = '.4';
-    document.querySelector('.mode-card[data-mode="F1"]').style.pointerEvents = 'none';
+    document.querySelector('.mode-card[data-mode="F1"]').disabled = true;
   }
 }
 
@@ -688,7 +763,7 @@ function refreshMenuStats(){
 
 document.querySelectorAll('.mode-card').forEach(el=>{
   el.addEventListener('click', ()=>{
-    if(el.style.pointerEvents==='none') return;
+    if(el.disabled) return;
     document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
     el.classList.add('selected');
     uiMode = el.dataset.mode;
@@ -737,13 +812,11 @@ function showCard(){
   $('promptArea').classList.remove('hidden');
 
   if(uiMode==='F1'){
-    $('promptIcon').textContent = '🔊';
     $('promptSpeaker').classList.remove('hidden');
     $('promptMain').textContent = '';
     $('promptSub').textContent = 'タップして再生';
     setTimeout(()=>speak(w.h), 150);
   } else { // F2: 単語(漢字) → 意味
-    $('promptIcon').textContent = '';
     $('promptSpeaker').classList.add('hidden');
     $('promptMain').textContent = w.h;
     $('promptSub').textContent = '';
