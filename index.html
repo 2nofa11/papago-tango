@@ -257,6 +257,14 @@
     min-height:36px; border:1px solid var(--line); border-radius:8px; padding:6px 8px;
     font-size:16px; background:var(--card); color:var(--ink);
   }
+  .setting-row input[type=number]:disabled{ opacity:.45; }
+  .setting-control{ display:flex; align-items:center; gap:8px; }
+  .setting-control input[type=number]{ width:72px; }
+  .unlimited-toggle{
+    display:flex; align-items:center; gap:4px; font-size:12px; color:var(--ink-faint);
+    white-space:nowrap; cursor:pointer;
+  }
+  .unlimited-toggle input[type=checkbox]{ width:16px; height:16px; accent-color:var(--seal, currentColor); }
   .settings-btn{ min-height:44px; padding:11px; border-radius:10px; border:1px solid var(--line); background:var(--card); font-size:13px; cursor:pointer; color:var(--ink); }
   .settings-btn.danger{ color:var(--seal); border-color:var(--seal-soft); margin-top:4px; }
   #closeSettings{
@@ -399,11 +407,17 @@
     <h2 id="settingsTitle">設定</h2>
     <div class="setting-row">
       <label for="setNewPerDay">新規カード/日</label>
-      <input type="number" inputmode="numeric" id="setNewPerDay" name="newPerDay" autocomplete="off" min="0" max="200" value="100">
+      <div class="setting-control">
+        <input type="number" inputmode="numeric" id="setNewPerDay" name="newPerDay" autocomplete="off" min="0" max="200" value="100">
+        <label class="unlimited-toggle"><input type="checkbox" id="setNewPerDayUnlimited"> 無制限</label>
+      </div>
     </div>
     <div class="setting-row">
       <label for="setReviewCap">1日の復習上限</label>
-      <input type="number" inputmode="numeric" id="setReviewCap" name="reviewCap" autocomplete="off" min="10" max="500" value="150">
+      <div class="setting-control">
+        <input type="number" inputmode="numeric" id="setReviewCap" name="reviewCap" autocomplete="off" min="10" max="500" value="150">
+        <label class="unlimited-toggle"><input type="checkbox" id="setReviewCapUnlimited"> 無制限</label>
+      </div>
     </div>
     <div class="setting-row">
       <label for="setSessionSize">セッション枚数</label>
@@ -13218,6 +13232,12 @@ function renderShelf(){
     [1,2,3,4,5,6,7].map(b=>`次の復習まで${formatInterval(BOX_DAYS[b])}: ${counts[b]}件`).join('、') + `、習得済み: ${counts.mastered}件`);
 }
 
+function getNewPerDay(){
+  return $('setNewPerDayUnlimited').checked ? Infinity : (parseInt($('setNewPerDay').value)||0);
+}
+function getReviewCap(){
+  return $('setReviewCapUnlimited').checked ? Infinity : (parseInt($('setReviewCap').value)||150);
+}
 function refreshMenuStats(){
   ensureMetaFresh();
   const pool = filterPool(uiRange, uiMode);
@@ -13230,7 +13250,7 @@ function refreshMenuStats(){
     else if(rec.next<=now) due++;
   }
   $('statDue').textContent = due;
-  $('statNew').textContent = Math.min(fresh, Math.max(0, parseInt($('setNewPerDay').value)-meta.count));
+  $('statNew').textContent = Math.min(fresh, Math.max(0, getNewPerDay()-meta.count));
   $('statMastered').textContent = mastered + ' / ' + pool.length;
   $('startBtn').disabled = (due===0 && fresh===0);
   renderShelf();
@@ -13256,8 +13276,8 @@ document.querySelectorAll('#rangeChips .chip').forEach(el=>{
 
 /* ---------- session flow ---------- */
 $('startBtn').addEventListener('click', ()=>{
-  const newPerDay = parseInt($('setNewPerDay').value)||0;
-  const reviewCap = parseInt($('setReviewCap').value)||150;
+  const newPerDay = getNewPerDay();
+  const reviewCap = getReviewCap();
   const sessionSize = parseInt($('setSessionSize').value)||20;
   const built = buildSession(uiMode, uiRange, sessionSize, newPerDay, reviewCap);
   session = built.session;
@@ -13404,6 +13424,13 @@ $('settingsOverlay').addEventListener('click', e=>{
 $('setVoice').addEventListener('change', e=>{ chosenVoice = zhVoices[parseInt(e.target.value)] || chosenVoice; });
 $('setNewPerDay').addEventListener('change', refreshMenuStats);
 $('setToneColor').addEventListener('change', refreshMenuStats);
+$('setNewPerDayUnlimited').addEventListener('change', e=>{
+  $('setNewPerDay').disabled = e.target.checked;
+  refreshMenuStats();
+});
+$('setReviewCapUnlimited').addEventListener('change', e=>{
+  $('setReviewCap').disabled = e.target.checked;
+});
 
 $('exportBtn').addEventListener('click', ()=>{
   const data = { progress, meta, exportedAt: new Date().toISOString() };
